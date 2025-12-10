@@ -62,7 +62,7 @@ def bboxPrioritization(name, prog, v, ctype, k, n, r, b, repeats, selsize):
                         fin, selsize, r=r, b=b, bbox=True, k=k, memory=False)
                 else:
                     stime, ptime, prioritization = fast.fast_(
-                        fin, selsize, r=r, b=b, bbox=True, k=k, memory=True)
+                        fin, selsize, r=r, b=b, bbox=True, k=k, memory=False)
                 writePrioritization(ppath, name, ctype, run, prioritization)
                 apfd = metric.apfd(prioritization, fault_matrix, javaFlag)
                 apfds.append(apfd)
@@ -90,7 +90,7 @@ def bboxPrioritization(name, prog, v, ctype, k, n, r, b, repeats, selsize):
                         fin, r, b, bbox=True, k=k, memory=False)
                 else:
                     stime, ptime, prioritization = fast.fast_pw(
-                        fin, r, b, bbox=True, k=k, memory=True)
+                        fin, r, b, bbox=True, k=k, memory=False)
                 writePrioritization(ppath, name, ctype, run, prioritization)
                 apfd = metric.apfd(prioritization, fault_matrix, javaFlag)
                 apfds.append(apfd)
@@ -205,7 +205,7 @@ def wboxPrioritization(name, prog, v, ctype, n, r, b, repeats, selsize):
                         fin, selsize, r=r, b=b, memory=False)
                 else:
                     stime, ptime, prioritization = fast.fast_(
-                        fin, selsize, r=r, b=b, memory=True)
+                        fin, selsize, r=r, b=b, memory=False)
                 writePrioritization(ppath, name, ctype, run, prioritization)
                 apfd = metric.apfd(prioritization, fault_matrix, javaFlag)
                 apfds.append(apfd)
@@ -232,7 +232,7 @@ def wboxPrioritization(name, prog, v, ctype, n, r, b, repeats, selsize):
                     stime, ptime, prioritization = fast.fast_pw(fin, r, b)
                 else:
                     stime, ptime, prioritization = fast.fast_pw(
-                        fin, r, b, memory=True)
+                        fin, r, b, memory=False)
                 writePrioritization(ppath, name, ctype, run, prioritization)
                 apfd = metric.apfd(prioritization, fault_matrix, javaFlag)
                 apfds.append(apfd)

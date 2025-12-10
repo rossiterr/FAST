@@ -55,6 +55,13 @@ def loadTestSuite(input_file, bbox=False, k=5):
 
 # TODO: just store a single pickle file for each test
 def storeSignatures(input_file, sigfile, hashes, bbox=False, k=5):
+    # Salvar shingles em arquivo se for black-box
+    if bbox:
+        shinglesfile = input_file.replace(".txt", ".shingles")
+        shingles_raw_file = input_file.replace(".txt", ".shingles_raw")
+        shingles_out = open(shinglesfile, "w")
+        shingles_raw_out = open(shingles_raw_file, "w")
+    
     with open(sigfile, "w") as sigfile:
         with open(input_file) as fin:
             tcID = 1
@@ -63,8 +70,23 @@ def storeSignatures(input_file, sigfile, hashes, bbox=False, k=5):
                     # shingling
                     tc_ = tc[:-1]
                     tc_shingles = set()
+                    tc_shingles_raw = []
                     for i in range(len(tc_) - k + 1):
-                        tc_shingles.add(hash(tc_[i:i + k]))
+                        shingle_str = tc_[i:i + k]
+                        tc_shingles_raw.append(shingle_str)
+                        tc_shingles.add(hash(shingle_str))
+
+                    # Salvar shingles com hash
+                    for shingle_hash in sorted(tc_shingles):
+                        shingles_out.write(str(shingle_hash))
+                        shingles_out.write(" ")
+                    shingles_out.write("\n")
+                    
+                    # Salvar shingles sem hash (strings originais)
+                    for shingle_raw in tc_shingles_raw:
+                        shingles_raw_out.write(repr(shingle_raw))
+                        shingles_raw_out.write(" ")
+                    shingles_raw_out.write("\n")
 
                     sig = lsh.tcMinhashing((tcID, set(tc_shingles)), hashes)
                 else:
@@ -75,6 +97,10 @@ def storeSignatures(input_file, sigfile, hashes, bbox=False, k=5):
                     sigfile.write(" ")
                 sigfile.write("\n")
                 tcID += 1
+    
+    if bbox:
+        shingles_out.close()
+        shingles_raw_out.close()
 
 
 # TODO: just load a single pickle file for each test
