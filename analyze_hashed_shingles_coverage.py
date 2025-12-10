@@ -97,7 +97,7 @@ def analyze_shingles_coverage(branch_file, shingles_file, output_prefix):
     plt.plot(percentages, branch_coverage_pct, 
              'b-', linewidth=2.5, label='Branch Coverage', marker='o', markersize=3, markevery=5)
     plt.plot(percentages, shingles_coverage_pct, 
-             'g--', linewidth=2.5, label='Shingles Coverage', marker='^', markersize=3, markevery=5)
+             'g--', linewidth=2.5, label='Hashed Shingles Coverage', marker='^', markersize=3, markevery=5)
     
     # Linha de referência diagonal
     plt.plot([0, 100], [0, 100], 'k:', linewidth=1, alpha=0.3, label='Referência (y=x)')
@@ -109,7 +109,7 @@ def analyze_shingles_coverage(branch_file, shingles_file, output_prefix):
     # Título dinâmico
     title_parts = output_prefix.split(os.sep)
     title_name = title_parts[-1] if title_parts else output_prefix
-    plt.title(f'Comparação: Branch Coverage vs Shingles Coverage\n({title_name})', 
+    plt.title(f'Comparação: Branch Coverage vs Hashed Shingles Coverage\n({title_name})', 
               fontsize=14, fontweight='bold', pad=20)
     
     plt.grid(True, alpha=0.3, linestyle='--')
