@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 
 
-def load_branch_coverage(filepath):
-    """Carrega a cobertura de branches original"""
+def load_coverage(filepath):
+    """Carrega a cobertura (branches, functions ou lines)"""
     test_cases = []
     with open(filepath, 'r') as f:
         for line in f:
-            branches = set(line.strip().split())
-            test_cases.append(branches)
+            entities = set(line.strip().split())
+            test_cases.append(entities)
     return test_cases
 
 
@@ -60,15 +60,15 @@ def calculate_signature_uniqueness(signatures_subset):
     return len(unique_sigs)
 
 
-def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch'):
+def analyze_coverage(coverage_file, signature_file, output_prefix='chart_v0_branch', entity_name='branch'):
     """
     Analisa a evolução da cobertura a cada 1% dos testes
     """
     print("Carregando dados...")
-    branches = load_branch_coverage(branch_file)
+    coverage_data = load_coverage(coverage_file)
     signatures = load_signatures(signature_file)
     
-    total_tests = len(branches)
+    total_tests = len(coverage_data)
     print(f"Total de casos de teste: {total_tests}")
     
     # Criar ordem aleatória
@@ -78,7 +78,7 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
     
     # Calcular cobertura a cada 1%
     percentages = []
-    branch_coverage = []
+    entity_coverage = []
     signature_coverage = []
     signature_uniqueness = []
     unique_signatures_ratio = []
@@ -89,10 +89,10 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
         num_tests = max(1, int(total_tests * pct / 100))
         current_indices = indices[:num_tests]
         
-        # Branch Coverage: branches únicos acumulados
-        accumulated_branches = set()
+        # Entity Coverage: entidades únicas acumuladas
+        accumulated_entities = set()
         for idx in current_indices:
-            accumulated_branches.update(branches[idx])
+            accumulated_entities.update(coverage_data[idx])
         
         # Signature Metrics
         current_signatures = [signatures[idx] for idx in current_indices]
@@ -100,32 +100,35 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
         uniqueness = calculate_signature_uniqueness(current_signatures)
         
         percentages.append(pct)
-        branch_coverage.append(len(accumulated_branches))
+        entity_coverage.append(len(accumulated_entities))
         signature_coverage.append(sig_coverage)
         signature_uniqueness.append(uniqueness)
         unique_signatures_ratio.append(uniqueness / num_tests * 100)
         
         if pct % 10 == 0:
             print(f"  {pct}% - {num_tests} testes - "
-                  f"{len(accumulated_branches)} branches cobertos - "
+                  f"{len(accumulated_entities)} {entity_name}s cobertos - "
                   f"{sig_coverage} sig values cobertos - "
                   f"{uniqueness} sigs únicas")
     
     print("\nGerando gráfico de comparação...")
     
     # Calcular porcentagens de cobertura
-    max_branch = max(branch_coverage)
+    max_entity = max(entity_coverage)
     max_sig = max(signature_coverage)
     
-    branch_coverage_pct = [(x / max_branch) * 100 for x in branch_coverage]
+    entity_coverage_pct = [(x / max_entity) * 100 for x in entity_coverage]
     signature_coverage_pct = [(x / max_sig) * 100 for x in signature_coverage]
     
     # Criar gráfico de comparação
     plt.figure(figsize=(12, 7))
     
+    # Label dinâmico baseado na entidade
+    entity_label = f"{entity_name.capitalize()} Coverage"
+    
     # Plotar as duas curvas
-    plt.plot(percentages, branch_coverage_pct, 
-             'b-', linewidth=2.5, label='Branch Coverage', marker='o', markersize=3, markevery=5)
+    plt.plot(percentages, entity_coverage_pct, 
+             'b-', linewidth=2.5, label=entity_label, marker='o', markersize=3, markevery=5)
     plt.plot(percentages, signature_coverage_pct, 
              'r--', linewidth=2.5, label='Signature Coverage', marker='s', markersize=3, markevery=5)
     
@@ -139,7 +142,7 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
     # Título dinâmico baseado no output_prefix
     title_parts = output_prefix.split(os.sep)
     title_name = title_parts[-1] if title_parts else output_prefix
-    plt.title(f'Comparação: Branch Coverage vs Signature Coverage\n({title_name})', 
+    plt.title(f'Comparação: {entity_label} vs Signature Coverage\n({title_name})', 
               fontsize=14, fontweight='bold', pad=20)
     
     plt.grid(True, alpha=0.3, linestyle='--')
@@ -154,9 +157,9 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
     for pct in key_points:
         idx = pct - 1  # índice da lista (0-indexed)
         
-        # Anotação para Branch Coverage
-        plt.annotate(f'{branch_coverage_pct[idx]:.1f}%',
-                    xy=(pct, branch_coverage_pct[idx]),
+        # Anotação para Entity Coverage
+        plt.annotate(f'{entity_coverage_pct[idx]:.1f}%',
+                    xy=(pct, entity_coverage_pct[idx]),
                     xytext=(10, 10), textcoords='offset points',
                     fontsize=9, color='blue',
                     bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.7),
@@ -171,11 +174,11 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
                     arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='red', lw=1))
     
     # Calcular correlação
-    correlation = np.corrcoef(branch_coverage_pct, signature_coverage_pct)[0, 1]
+    correlation = np.corrcoef(entity_coverage_pct, signature_coverage_pct)[0, 1]
     
     # Adicionar informações estatísticas
     text_info = f'Correlação: {correlation:.4f}\n'
-    text_info += f'Total Branches: {max_branch:,}\n'
+    text_info += f'Total {entity_name.capitalize()}s: {max_entity:,}\n'
     text_info += f'Total Signatures: {max_sig:,}'
     
     plt.text(0.02, 0.98, text_info,
@@ -200,11 +203,12 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
     # Salvar dados em arquivo TSV
     output_file = f'{output_prefix}_analysis.tsv'
     with open(output_file, 'w') as f:
-        f.write('Percentage\tTests_Executed\tBranches_Covered\tSignature_Coverage\t'
+        entity_col_name = f"{entity_name.capitalize()}s_Covered"
+        f.write(f'Percentage\tTests_Executed\t{entity_col_name}\tSignature_Coverage\t'
                 'Unique_Signatures\tUnique_Sig_Ratio\n')
         for i in range(len(percentages)):
             num_tests = max(1, int(total_tests * percentages[i] / 100))
-            f.write(f'{percentages[i]}\t{num_tests}\t{branch_coverage[i]}\t'
+            f.write(f'{percentages[i]}\t{num_tests}\t{entity_coverage[i]}\t'
                    f'{signature_coverage[i]}\t{signature_uniqueness[i]}\t'
                    f'{unique_signatures_ratio[i]:.2f}\n')
     
@@ -215,21 +219,21 @@ def analyze_coverage(branch_file, signature_file, output_prefix='chart_v0_branch
     print("ESTATÍSTICAS FINAIS")
     print("="*60)
     print(f"Total de casos de teste: {total_tests}")
-    print(f"Total de branches únicos: {max(branch_coverage)}")
+    print(f"Total de {entity_name}s únicos: {max(entity_coverage)}")
     print(f"Total de signature values únicos: {max(signature_coverage)}")
     print(f"Total de assinaturas únicas: {max(signature_uniqueness)}")
     print(f"Porcentagem de assinaturas únicas: {(max(signature_uniqueness)/total_tests)*100:.2f}%")
     
     # Correlação entre as métricas
-    correlation = np.corrcoef(branch_coverage, signature_coverage)[0, 1]
-    print(f"\nCorrelação (Branch Coverage vs Signature Coverage): {correlation:.4f}")
+    correlation = np.corrcoef(entity_coverage, signature_coverage)[0, 1]
+    print(f"\nCorrelação ({entity_label} vs Signature Coverage): {correlation:.4f}")
     
     if correlation > 0.8:
-        print("✓ Alta correlação: Assinaturas LSH são um bom proxy para branch coverage")
+        print(f"✓ Alta correlação: Assinaturas LSH são um bom proxy para {entity_name} coverage")
     elif correlation > 0.5:
-        print("~ Correlação moderada: Assinaturas LSH capturam parcialmente a cobertura")
+        print(f"~ Correlação moderada: Assinaturas LSH capturam parcialmente a cobertura")
     else:
-        print("✗ Baixa correlação: Assinaturas LSH podem não refletir bem a cobertura")
+        print(f"✗ Baixa correlação: Assinaturas LSH podem não refletir bem a cobertura")
     
     print("="*60)
 
@@ -276,19 +280,19 @@ if __name__ == "__main__":
             
             print(f"[{current}/{total_analyses}] Processando {project} - {entity}")
             print("-" * 60)
-            print(f"Branch file: {branch_file}")
+            print(f"Coverage file: {branch_file}")
             print(f"Signature file: {signature_file}")
             
-            # Definir caminho de saída: correlation_sig/{project}/{project}_{entity}
-            output_prefix = os.path.join('correlation_sig', project, f'{project}_{entity}')
+            # Definir caminho de saída: correlation_sig/{entity}_cov/{project}/{project}_{entity}
+            output_prefix = os.path.join('correlation_sig', f'{entity}_cov', project, f'{project}_{entity}')
             
             try:
-                analyze_coverage(branch_file, signature_file, output_prefix)
+                analyze_coverage(branch_file, signature_file, output_prefix, entity_name=entity)
                 print(f"✓ Concluído: {project} - {entity}\n")
             except Exception as e:
                 print(f"✗ ERRO ao processar {project} - {entity}: {e}\n")
     
     print("="*60)
     print("ANÁLISE COMPLETA!")
-    print(f"Resultados salvos em: correlation_sig/")
+    print(f"Resultados salvos em: correlation_sig/{{branch,function,line}}_cov/")
     print("="*60)
