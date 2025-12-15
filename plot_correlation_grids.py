@@ -67,42 +67,53 @@ def load_correlation_data(entity):
     return correlation_matrix, has_data, is_const, projects, method_labels
 
 
-def create_correlation_grid(entity):
-    """Cria malha de gráficos para um tipo de cobertura"""
+def create_correlation_grid(entity, project_subset, subset_name):
+    """Cria malha de gráficos para um tipo de cobertura e subconjunto de projetos"""
     
-    print(f"\n{'='*80}")
-    print(f"Gerando malha de gráficos para {entity.upper()} COVERAGE")
-    print(f"{'='*80}")
+    print(f"\n  Gerando malha {entity.upper()} - {subset_name}...")
     
-    correlation_matrix, has_data, is_const, projects, methods = load_correlation_data(entity)
+    correlation_matrix, has_data, is_const, all_projects, methods = load_correlation_data(entity)
     
-    # Criar figura com subplots
-    fig, axes = plt.subplots(len(projects), len(methods), figsize=(15, 25))
-    fig.suptitle(f'{entity.capitalize()} Coverage - Correlations Grid\n' + 
-                 f'(Projects × Methods)', 
-                 fontsize=16, fontweight='bold', y=0.995)
+    # Filtrar apenas os projetos do subset
+    project_indices = [i for i, p in enumerate(all_projects) if p in project_subset]
+    projects = [all_projects[i] for i in project_indices]
+    
+    # Filtrar matrizes
+    correlation_matrix = correlation_matrix[project_indices, :]
+    has_data = has_data[project_indices, :]
+    is_const = is_const[project_indices, :]
+    
+    # Criar figura com subplots - 3x5 (métodos x projetos do subset)
+    fig, axes = plt.subplots(len(methods), len(projects), figsize=(15, 10))
+    fig.suptitle(f'{entity.capitalize()} Coverage - {subset_name}\n' + 
+                 f'Correlations Grid (Methods × Projects)', 
+                 fontsize=16, fontweight='bold', y=0.99)
     
     # Configurar cada subplot
-    for i, project in enumerate(projects):
-        for j, method in enumerate(methods):
+    for i, method in enumerate(methods):
+        for j, project in enumerate(projects):
             ax = axes[i, j]
             
             # Título apenas na primeira linha
             if i == 0:
-                ax.set_title(method, fontsize=10, fontweight='bold', pad=8)
+                ax.set_title(project.replace('_', ' ').title(), 
+                           fontsize=10, fontweight='bold', pad=8)
             
-            # Label do projeto apenas na primeira coluna
+            # Label do método apenas na primeira coluna
             if j == 0:
-                ax.set_ylabel(project.replace('_', ' ').title(), 
-                            fontsize=9, fontweight='bold', rotation=0, 
-                            ha='right', va='center', labelpad=40)
+                ax.set_ylabel(method, 
+                            fontsize=11, fontweight='bold', rotation=90, 
+                            ha='center', va='center', labelpad=10)
             
-            if has_data[i, j]:
-                if is_const[i, j]:
+            # Encontrar índice original do projeto
+            orig_idx = all_projects.index(project)
+            
+            if has_data[j, i]:
+                if is_const[j, i]:
                     # Cobertura constante - mostrar marcador especial
                     ax.text(0.5, 0.5, 'CONST\n(σ=0)', 
                            ha='center', va='center', 
-                           fontsize=12, fontweight='bold',
+                           fontsize=10, fontweight='bold',
                            color='orange',
                            bbox=dict(boxstyle='round,pad=0.5', 
                                    facecolor='lightyellow', 
@@ -110,7 +121,7 @@ def create_correlation_grid(entity):
                     ax.set_xlim(0, 1)
                     ax.set_ylim(0, 1)
                 else:
-                    corr_value = correlation_matrix[i, j]
+                    corr_value = correlation_matrix[j, i]
                     
                     # Cor baseada na correlação
                     if corr_value >= 0.95:
@@ -132,11 +143,11 @@ def create_correlation_grid(entity):
                     # Mostrar valor da correlação
                     ax.text(0.5, 0.6, f'r = {corr_value:.4f}', 
                            ha='center', va='center', 
-                           fontsize=11, fontweight='bold')
+                           fontsize=9, fontweight='bold')
                     
                     ax.text(0.5, 0.4, f'({quality})', 
                            ha='center', va='center', 
-                           fontsize=8, style='italic',
+                           fontsize=7, style='italic',
                            color='gray')
                     
                     # Background colorido
@@ -149,7 +160,7 @@ def create_correlation_grid(entity):
                 # Sem dados
                 ax.text(0.5, 0.5, 'N/A', 
                        ha='center', va='center', 
-                       fontsize=12, color='gray')
+                       fontsize=10, color='gray')
                 ax.set_xlim(0, 1)
                 ax.set_ylim(0, 1)
             
@@ -166,64 +177,70 @@ def create_correlation_grid(entity):
                 spine.set_linewidth(1.5)
                 spine.set_color('black')
     
-    # Ajustar layout
-    plt.tight_layout(rect=[0, 0, 1, 0.99])
+    # Ajustar layout para deixar mais espaço no topo e para a legenda
+    plt.subplots_adjust(top=0.90, bottom=0.15, left=0.10, right=0.98, hspace=0.3, wspace=0.2)
     
-    # Adicionar legenda
+    # Adicionar legenda dentro da figura
     legend_elements = [
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='#2ecc71', markersize=10, 
+                  markerfacecolor='#2ecc71', markersize=12, 
                   label='Excellent (r ≥ 0.95)', alpha=0.3),
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='#27ae60', markersize=10, 
+                  markerfacecolor='#27ae60', markersize=12, 
                   label='Very Good (r ≥ 0.90)', alpha=0.3),
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='#f39c12', markersize=10, 
+                  markerfacecolor='#f39c12', markersize=12, 
                   label='Good (r ≥ 0.85)', alpha=0.3),
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='#e67e22', markersize=10, 
+                  markerfacecolor='#e67e22', markersize=12, 
                   label='Fair (r ≥ 0.80)', alpha=0.3),
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='#e74c3c', markersize=10, 
+                  markerfacecolor='#e74c3c', markersize=12, 
                   label='Poor (r < 0.80)', alpha=0.3),
         plt.Line2D([0], [0], marker='s', color='w', 
-                  markerfacecolor='lightyellow', markersize=10, 
-                  label='Constant Coverage', 
+                  markerfacecolor='lightyellow', markersize=12, 
+                  label='Constant Coverage (σ=0)', 
                   markeredgecolor='orange', markeredgewidth=2)
     ]
     
+    # Posicionar legenda na parte inferior da figura
     fig.legend(handles=legend_elements, 
               loc='lower center', 
-              ncol=6, 
+              ncol=3, 
               frameon=True,
-              fontsize=9,
-              bbox_to_anchor=(0.5, -0.01))
+              fontsize=10,
+              bbox_to_anchor=(0.5, 0.02),
+              fancybox=True,
+              shadow=True)
     
     # Salvar figura
     output_dir = 'correlation_tables'
     os.makedirs(output_dir, exist_ok=True)
-    output_file = f'{output_dir}/{entity}_coverage_correlation_grid.png'
     
-    plt.savefig(output_file, dpi=300, bbox_inches='tight', facecolor='white')
-    print(f"✓ Malha salva: {output_file}")
+    # Nome do arquivo com indicação do subset (remover caracteres inválidos)
+    subset_tag = subset_name.lower().replace(' ', '_').replace('/', '_').replace('++', 'pp')
+    output_file = f'{output_dir}/{entity}_coverage_correlation_grid_{subset_tag}.png'
+    
+    plt.savefig(output_file, dpi=300, bbox_inches='tight', facecolor='white', pad_inches=0.3)
+    print(f"    ✓ Malha salva: {output_file}")
     
     plt.close()
     
     # Estatísticas
-    print(f"\nEstatísticas da malha {entity.upper()}:")
-    for j, method in enumerate(methods):
-        valid_corrs = correlation_matrix[has_data[:, j] & ~is_const[:, j], j]
-        const_count = is_const[:, j].sum()
+    print(f"    Estatísticas:")
+    for i, method in enumerate(methods):
+        valid_corrs = correlation_matrix[has_data[:, i] & ~is_const[:, i], i]
+        const_count = is_const[:, i].sum()
         
         if len(valid_corrs) > 0:
-            print(f"  {method:<20}: μ={valid_corrs.mean():.4f}, "
+            print(f"      {method:<20}: μ={valid_corrs.mean():.4f}, "
                   f"σ={valid_corrs.std():.4f}, "
                   f"min={valid_corrs.min():.4f}, "
                   f"max={valid_corrs.max():.4f}")
             if const_count > 0:
-                print(f"  {'':20}  [!] {const_count} caso(s) com cobertura constante")
+                print(f"      {'':20}  [!] {const_count} caso(s) com cobertura constante")
         else:
-            print(f"  {method:<20}: Sem dados válidos")
+            print(f"      {method:<20}: Sem dados válidos")
 
 
 def generate_all_grids():
@@ -231,21 +248,39 @@ def generate_all_grids():
     
     print("="*80)
     print("GERAÇÃO DE MALHAS DE CORRELAÇÃO")
-    print("Criando visualizações: Projects × Methods para cada Coverage Type")
+    print("Criando visualizações: Methods × Projects para cada Coverage Type")
+    print("Separando projetos Java e C/C++")
     print("="*80)
     
     entities = ['branch', 'function', 'line']
     
+    # Definir subconjuntos de projetos
+    java_projects = ['chart_v0', 'closure_v0', 'lang_v0', 'math_v0', 'time_v0']
+    cpp_projects = ['flex_v3', 'grep_v3', 'gzip_v1', 'make_v1', 'sed_v6']
+    
     for entity in entities:
-        create_correlation_grid(entity)
+        print(f"\n{'='*80}")
+        print(f"Processando {entity.upper()} COVERAGE")
+        print(f"{'='*80}")
+        
+        # Gerar malha para projetos Java
+        create_correlation_grid(entity, java_projects, 'Java Projects')
+        
+        # Gerar malha para projetos C/C++
+        create_correlation_grid(entity, cpp_projects, 'C/C++ Projects')
     
     print(f"\n{'='*80}")
     print("TODAS AS MALHAS GERADAS COM SUCESSO!")
     print(f"Diretório de saída: correlation_tables/")
     print("Arquivos gerados:")
-    print("  - branch_coverage_correlation_grid.png")
-    print("  - function_coverage_correlation_grid.png")
-    print("  - line_coverage_correlation_grid.png")
+    print("  Java Projects:")
+    print("    - branch_coverage_correlation_grid_java_projects.png")
+    print("    - function_coverage_correlation_grid_java_projects.png")
+    print("    - line_coverage_correlation_grid_java_projects.png")
+    print("  C/C++ Projects:")
+    print("    - branch_coverage_correlation_grid_c_cpp_projects.png")
+    print("    - function_coverage_correlation_grid_c_cpp_projects.png")
+    print("    - line_coverage_correlation_grid_c_cpp_projects.png")
     print(f"{'='*80}")
 
 
