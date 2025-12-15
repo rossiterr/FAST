@@ -87,7 +87,7 @@ def create_correlation_grid(entity, project_subset, subset_name):
     fig, axes = plt.subplots(len(methods), len(projects), figsize=(15, 10))
     fig.suptitle(f'{entity.capitalize()} Coverage - {subset_name}\n' + 
                  f'Correlations Grid (Methods × Projects)', 
-                 fontsize=16, fontweight='bold', y=0.99)
+                 fontsize=16, fontweight='bold', y=0.98, ha='center')
     
     # Configurar cada subplot
     for i, method in enumerate(methods):
@@ -178,7 +178,7 @@ def create_correlation_grid(entity, project_subset, subset_name):
                 spine.set_color('black')
     
     # Ajustar layout para deixar mais espaço no topo e para a legenda
-    plt.subplots_adjust(top=0.90, bottom=0.15, left=0.10, right=0.98, hspace=0.3, wspace=0.2)
+    plt.subplots_adjust(top=0.88, bottom=0.15, left=0.10, right=0.98, hspace=0.3, wspace=0.2)
     
     # Adicionar legenda dentro da figura
     legend_elements = [
