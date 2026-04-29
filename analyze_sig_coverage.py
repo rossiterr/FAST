@@ -1,6 +1,7 @@
 """
-Análise comparativa entre Branch Coverage e Signature Coverage
+Análise comparativa entre Coverage (Branch/Function/Line) e Signature Coverage (Black-Box)
 Analisa a evolução da cobertura a cada 1% dos testes executados em ordem aleatória
+Usa signatures geradas a partir de hashed shingles (black-box) ao invés de white-box
 """
 
 import os
@@ -130,7 +131,7 @@ def analyze_coverage(coverage_file, signature_file, output_prefix='chart_v0_bran
     plt.plot(percentages, entity_coverage_pct, 
              'b-', linewidth=2.5, label=entity_label, marker='o', markersize=3, markevery=5)
     plt.plot(percentages, signature_coverage_pct, 
-             'r--', linewidth=2.5, label='Signature Coverage', marker='s', markersize=3, markevery=5)
+             'r--', linewidth=2.5, label='Signature Coverage (Black-Box)', marker='s', markersize=3, markevery=5)
     
     # Linha de referência diagonal (cobertura ideal = % testes)
     plt.plot([0, 100], [0, 100], 'k:', linewidth=1, alpha=0.3, label='Referência (y=x)')
@@ -142,7 +143,7 @@ def analyze_coverage(coverage_file, signature_file, output_prefix='chart_v0_bran
     # Título dinâmico baseado no output_prefix
     title_parts = output_prefix.split(os.sep)
     title_name = title_parts[-1] if title_parts else output_prefix
-    plt.title(f'Comparação: {entity_label} vs Signature Coverage\n({title_name})', 
+    plt.title(f'Comparação: {entity_label} vs Signature Coverage (Black-Box)\n({title_name})', 
               fontsize=14, fontweight='bold', pad=20)
     
     plt.grid(True, alpha=0.3, linestyle='--')
@@ -252,7 +253,8 @@ if __name__ == "__main__":
     entities = ['branch', 'function', 'line']
     
     print("="*60)
-    print("ANÁLISE DE COBERTURA: Branch vs Signature")
+    print("ANÁLISE DE COBERTURA: Coverage vs Black-Box Signature")
+    print("Usando signatures geradas de hashed shingles (bbox)")
     print("Processando todos os projetos e entidades")
     print("="*60 + "\n")
     
@@ -266,12 +268,12 @@ if __name__ == "__main__":
         for entity in entities:
             current += 1
             
-            branch_file = f'input/{project}/{project_base}-{entity}.txt'
-            signature_file = f'input/{project}/{project_base}-{entity}.sig'
+            entity_file = f'input/{project}/{project_base}-{entity}.txt'
+            signature_file = f'input/{project}/{project_base}-bbox.sig'  # Black-box signatures de shingles
             
             # Verificar se os arquivos existem
-            if not os.path.exists(branch_file):
-                print(f"[{current}/{total_analyses}] ⚠️  IGNORADO: {branch_file} não encontrado\n")
+            if not os.path.exists(entity_file):
+                print(f"[{current}/{total_analyses}] ⚠️  IGNORADO: {entity_file} não encontrado\n")
                 continue
             
             if not os.path.exists(signature_file):
@@ -280,14 +282,14 @@ if __name__ == "__main__":
             
             print(f"[{current}/{total_analyses}] Processando {project} - {entity}")
             print("-" * 60)
-            print(f"Coverage file: {branch_file}")
-            print(f"Signature file: {signature_file}")
+            print(f"Coverage file: {entity_file}")
+            print(f"Signature file (black-box): {signature_file}")
             
             # Definir caminho de saída: correlation_sig/{entity}_cov/{project}/{project}_{entity}
             output_prefix = os.path.join('correlation_sig', f'{entity}_cov', project, f'{project}_{entity}')
             
             try:
-                analyze_coverage(branch_file, signature_file, output_prefix, entity_name=entity)
+                analyze_coverage(entity_file, signature_file, output_prefix, entity_name=entity)
                 print(f"✓ Concluído: {project} - {entity}\n")
             except Exception as e:
                 print(f"✗ ERRO ao processar {project} - {entity}: {e}\n")
