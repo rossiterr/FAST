@@ -1,2 +1,5 @@
 scipy
 xxhash
+javalang
+numpy
+matplotlib
